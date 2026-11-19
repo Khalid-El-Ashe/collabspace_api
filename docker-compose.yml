@@ -1,0 +1,91 @@
+services:
+    # PHP application service.
+    # Builds the custom PHP-FPM image using the Dockerfile.
+    app:
+        build:
+            context: .
+            dockerfile: docker/php/Dockerfile
+
+        # Assign a fixed name to the PHP container.
+        container_name: huma_app
+
+        # Set the working directory inside the container.
+        working_dir: /var/www/html
+
+        # Mount the project directory into the container.
+        # Changes made locally will be reflected inside the container.
+        volumes:
+            - ./:/var/www/html
+
+        # Connect the container to the application network.
+        networks:
+            - huma_network
+
+    # Nginx web server service.
+    # Handles incoming HTTP requests and forwards PHP requests to PHP-FPM.
+    nginx:
+        # Use the lightweight official Nginx Alpine image.
+        image: nginx:alpine
+
+        # Assign a fixed name to the Nginx container.
+        container_name: huma_nginx
+
+        # Map host port 8071 to container port 80.
+        ports:
+            - "8071:80"
+
+        # Mount the Laravel project and custom Nginx configuration.
+        volumes:
+            - ./:/var/www/html
+            - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+
+        # Start the PHP application service before starting Nginx.
+        depends_on:
+            - app
+
+        # Connect Nginx to the application network.
+        networks:
+            - huma_network
+
+    # MySQL database service.
+    mysql:
+        # Use the official MySQL 8.4 image.
+        image: mysql:8.4
+
+        # Assign a fixed name to the MySQL container.
+        container_name: huma_mysql
+
+        # Define initial database configuration and credentials.
+        environment:
+            MYSQL_DATABASE: huma_db
+            MYSQL_PASSWORD: secret
+            MYSQL_ROOT_PASSWORD: secret
+
+        # Map host port 3307 to MySQL's default container port 3306.
+        ports:
+            - "3307:3306"
+
+        # Persist database data even if the container is removed.
+        volumes:
+            - mysql_data:/var/lib/mysql
+
+        # Check whether MySQL is ready to accept connections.
+        healthcheck:
+            test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
+        # Connect MySQL to the application network.
+        networks:
+            - huma_network
+
+# Define a custom Docker network for communication between services.
+networks:
+    huma_network:
+        driver: bridge
+
+# Define persistent Docker volumes.
+volumes:
+    # Store MySQL data outside the container lifecycle.
+    mysql_data:

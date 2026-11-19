@@ -1,0 +1,21 @@
+# Install system dependencies and libraries required by PHP extensions.
+RUN apt-get update && apt-get install -y \
+    git \              # Required for Git operations and Composer dependencies
+    curl \             # Used for transferring data and downloading resources
+    unzip \            # Required to extract Composer packages
+    zip \              # Used for creating ZIP archives
+    libzip-dev \       # Development library required by the PHP ZIP extension
+    libpng-dev \       # Required by the PHP GD extension for PNG image processing
+    libonig-dev \      # Required by the PHP mbstring extension
+    libxml2-dev \      # Required by PHP extensions that handle XML
+    && docker-php-ext-install \
+    pdo_mysql \        # Enables PHP to connect to MySQL databases using PDO
+    mbstring \         # Provides multibyte string handling
+    exif \             # Provides access to image metadata
+    pcntl \            # Provides process control functionality
+    bcmath \           # Provides arbitrary-precision mathematical operations
+    gd \               # Provides image creation and manipulation
+    zip \              # Enables ZIP archive support
+    opcache \          # Improves PHP performance by caching compiled bytecode
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
